@@ -1,0 +1,76 @@
+#!/bin/bash
+
+# Change this envvar for the home of the project.
+export LF_APPHOME=${HOME}/loungef
+
+export LF_LOGFILE=${LF_APPHOME}/log/loungef-monitor.log
+export LF_APILOGFILE=${LF_APPHOME}/log/loungef-monitorwebapi.log
+
+case $1 in
+    "--install")
+        echo "Installing Python dependencies for LoungeF..."
+        python3 -m venv $LF_APPHOME/run/lf-exec
+        source $LF_APPHOME/run/lf-exec/bin/activate
+        pip install -q --upgrade pip
+        pip install -qr $LF_APPHOME/config/requirements.txt
+        cp $LF_APPHOME/config/.env.example $LF_APPHOME/config/.env
+        ;;
+    "--start")
+        echo "Starting LoungeF monitor at background..."
+	    echo ""
+        source $LF_APPHOME/run/lf-exec/bin/activate
+        python3 $LF_APPHOME/src/loungef-monitor.py &
+        ;;
+    "--stop")
+        echo "Stopping LoungeF monitor..."
+        source $LF_APPHOME/run/lf-exec/bin/activate
+        SRV="loungef-monitor.py"
+        while :
+        do
+        	   if [ -z "$(ps aux | grep $SRV | grep -v 'grep')" ]
+        	   then
+        		   echo "LoungeF monitor stopped!"
+        		   break;
+        	   else
+        		   echo "LoungeF monitor running, trying to kill it..."
+        		   ps aux | grep "$SRV" | grep -v 'grep' | awk '{print $2}' | xargs kill -9
+        	   fi
+
+        	   sleep 2
+        done
+        ;;
+    "--apistart")
+        echo "Starting web-api at background..."
+        source $LF_APPHOME/run/lf-exec/bin/activate
+        echo ""
+        echo "Hit [ENTER] to release the terminal."
+        echo "Execute bin/loungef --apistop to stop only the API application."
+        echo "LOG File: $LF_APILOGFILE"
+	    echo ""
+        echo "API Root: http://{host}:9832/loungef-api/"
+        echo "{host} is the host IP that is serving the API."
+	    echo ""
+        FLASK_APP=$LF_APPHOME/src/loungef-webapi.py FLASK_ENV=development FLASK_DEBUG=1 flask run --host=0.0.0.0 --port=9832 >> $LF_APILOGFILE 2>&1 &
+        ;;
+    "--apistop")
+        echo "Stopping web-api..."
+        SRV="flask"
+        while :
+        do
+        	   if [ -z "$(ps aux | grep $SRV | grep -v 'grep')" ]
+        	   then
+        		   echo "web-api stopped!"
+        		   break;
+        	   else
+        		   echo "web-api running, trying to kill it..."
+        		   ps aux | grep "$SRV" | grep -v 'grep' | awk '{print $2}' | xargs kill -9
+        	   fi
+
+        	   sleep 2
+        done
+        ;;
+    *)
+        echo "Invalid argument. The only valid ones are --install, --start, --apistart [--debug], --apistop or --stop".
+        echo ""
+        ;;
+esac
