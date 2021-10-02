@@ -1,4 +1,12 @@
+# DEPRECATED
+
+![no-maintenance-intended](https://img.shields.io/maintenance/no/2019?style=plastic)
+
 # loungef
+
+> Deprecated, obsolete & archived.
+> 
+> This was part of an interview process I've made at 2019, and I keep it here just for historical purposes.
 
 All artifacts for RHEA test.
 
